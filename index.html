@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Šipky Liga</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    .hidden { display: none; }
+    button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+    input { padding: 5px; font-size: 16px; }
+    .big-score { font-size: 48px; font-weight: bold; margin: 10px; }
+    .player-box { display: inline-block; width: 45%; text-align: center; }
+    .keyboard button { width: 60px; height: 60px; font-size: 20px; }
+  </style>
+</head>
+<body>
+
+<h1>Šipkařská liga</h1>
+
+<div id="menu">
+  <button onclick="showScreen('addPlayerScreen')">Nový hráč</button>
+  <button onclick="initNewMatch()">Nový zápas</button>
+</div>
+
+<!-- Přidání hráče -->
+<div id="addPlayerScreen" class="hidden">
+  <h2>Nový hráč</h2>
+  <input type="text" id="playerName" placeholder="Jméno hráče">
+  <button onclick="addPlayer()">Uložit hráče</button>
+  <button onclick="showScreen('menu')">Zpět</button>
+  <div id="addPlayerMsg"></div>
+</div>
+
+<!-- Nový zápas -->
+<div id="newMatchScreen" class="hidden">
+  <h2>Nový zápas</h2>
+  <label>Hráč 1:
+    <select id="player1Select"></select>
+  </label><br><br>
+  <label>Hráč 2:
+    <select id="player2Select"></select>
+  </label><br><br>
+  <label>
+    Finále?
+    <input type="checkbox" id="isFinalCheckbox">
+  </label><br><br>
+  <div>
+    Kdo začíná?<br>
+    <button id="startP1Btn" onclick="setStartingPlayer('p1')">Začíná hráč 1</button>
+    <button id="startP2Btn" onclick="setStartingPlayer('p2')">Začíná hráč 2</button>
+  </div>
+  <br>
+  <button onclick="createMatch()">Zahájit zápas</button>
+  <button onclick="showScreen('menu')">Zpět</button>
+  <div id="newMatchMsg"></div>
+</div>
+
+<!-- Obrazovka zápasu -->
+<div id="matchScreen" class="hidden">
+  <h2>Zápas</h2>
+  <div id="matchInfo"></div>
+  <div>
+    <div class="player-box">
+      <div id="player1Name"></div>
+      <div class="big-score" id="player1Score">501</div>
+    </div>
+    <div class="player-box">
+      <div id="player2Name"></div>
+      <div class="big-score" id="player2Score">501</div>
+    </div>
+  </div>
+
+  <div>
+    Kolo: <span id="roundNumber">1</span> /
+    <span id="maxRounds">15</span>,
+    Leg: <span id="legNumber">1</span>
+  </div>
+
+  <div>
+    Na tahu: <span id="currentPlayerLabel"></span>
+  </div>
+
+  <div>
+    Zadaný hod: <span id="currentInput">0</span>
+  </div>
+
+  <div class="keyboard">
+    <div>
+      <button onclick="appendDigit('1')">1</button>
+      <button onclick="appendDigit('2')">2</button>
+      <button onclick="appendDigit('3')">3</button>
+    </div>
+    <div>
+      <button onclick="appendDigit('4')">4</button>
+      <button onclick="appendDigit('5')">5</button>
+      <button onclick="appendDigit('6')">6</button>
+    </div>
+    <div>
+      <button onclick="appendDigit('7')">7</button>
+      <button onclick="appendDigit('8')">8</button>
+      <button onclick="appendDigit('9')">9</button>
+    </div>
+    <div>
+      <button onclick="appendDigit('0')">0</button>
+      <button onclick="clearInput()">C</button>
+      <button onclick="submitThrow()">OK</button>
+    </div>
+  </div>
+
+  <button onclick="undoThrow()">Vrátit poslední hod</button>
+  <button onclick="endMatch()">Ukončit zápas</button>
+
+  <div id="matchMsg"></div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxaMBhmOuCRQaZdfulz-7VHGtuwvz934qOwFZ7pZuyxQymQ3BCw9CcT8keBxxFxypVB/exec';
+
+let players = [];
+let startingPlayer = null; // 'p1' nebo 'p2'
+let currentMatchId = null;
+let currentLegNumber = 1;
+let currentRoundNumber = 1;
+let maxRounds = 15;
+let isFinal = false;
+let player1Id = null;
+let player2Id = null;
+let currentPlayerId = null;
+let currentInputValue = '';
+
+function showScreen(id) {
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('addPlayerScreen').classList.add('hidden');
+  document.getElementById('newMatchScreen').classList.add('hidden');
+  document.getElementById('matchScreen').classList.add('hidden');
+  document.getElementById(id).classList.remove('hidden');
+}
+
+async function apiCall(body) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  const text = await res.text();
+  console.log('API response text:', text);   // pro kontrolu v konzoli
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error('Response parse error', e);
+    return {};
+  }
+}
+
+// ---- Přidání hráče ----
+async function addPlayer() {
+  const name = document.getElementById('playerName').value.trim();
+  if (!name) return;
+  const result = await apiCall({action: 'addPlayer', name});
+  document.getElementById('addPlayerMsg').innerText = 'Hráč uložen.';
+  document.getElementById('playerName').value = '';
+}
+
+// Načtení hráčů do selectu
+async function initNewMatch() {
+  const res = await apiCall({action: 'getPlayers'});
+  players = res.players || [];
+  const p1Select = document.getElementById('player1Select');
+  const p2Select = document.getElementById('player2Select');
+  p1Select.innerHTML = '';
+  p2Select.innerHTML = '';
+  players.forEach(p => {
+    const opt1 = document.createElement('option');
+    opt1.value = p.id;
+    opt1.textContent = p.name;
+    p1Select.appendChild(opt1);
+
+    const opt2 = document.createElement('option');
+    opt2.value = p.id;
+    opt2.textContent = p.name;
+    p2Select.appendChild(opt2);
+  });
+  startingPlayer = null;
+  document.getElementById('newMatchMsg').innerText = '';
+  showScreen('newMatchScreen');
+}
+
+function setStartingPlayer(which) {
+  startingPlayer = which; // 'p1' nebo 'p2'
+}
+
+// Vytvoření zápasu
+async function createMatch() {
+  const p1 = document.getElementById('player1Select').value;
+  const p2 = document.getElementById('player2Select').value;
+  isFinal = document.getElementById('isFinalCheckbox').checked;
+  if (!p1 || !p2 || p1 === p2) {
+    document.getElementById('newMatchMsg').innerText = 'Vyber dva různé hráče.';
+    return;
+  }
+  if (!startingPlayer) {
+    document.getElementById('newMatchMsg').innerText = 'Vyber, kdo začíná.';
+    return;
+  }
+
+  const startingPlayerId = startingPlayer === 'p1' ? p1 : p2;
+
+  const res = await apiCall({
+    action: 'createMatch',
+    player1_id: p1,
+    player2_id: p2,
+    is_final: isFinal,
+    starting_player_id: startingPlayerId
+  });
+
+  currentMatchId = res.id;
+  player1Id = p1;
+  player2Id = p2;
+  currentLegNumber = 1;
+  currentRoundNumber = 1;
+  maxRounds = 15;
+  currentPlayerId = startingPlayerId;
+
+  // nastavit UI
+  document.getElementById('legNumber').innerText = currentLegNumber;
+  document.getElementById('roundNumber').innerText = currentRoundNumber;
+  document.getElementById('maxRounds').innerText = maxRounds;
+
+  const p1Name = players.find(p => String(p.id) === String(player1Id))?.name || 'Hráč 1';
+  const p2Name = players.find(p => String(p.id) === String(player2Id))?.name || 'Hráč 2';
+  document.getElementById('player1Name').innerText = p1Name;
+  document.getElementById('player2Name').innerText = p2Name;
+
+  document.getElementById('player1Score').innerText = '501';
+  document.getElementById('player2Score').innerText = '501';
+
+  updateCurrentPlayerLabel();
+  showScreen('matchScreen');
+}
+
+function updateCurrentPlayerLabel() {
+  const p1Name = document.getElementById('player1Name').innerText;
+  const p2Name = document.getElementById('player2Name').innerText;
+  const label = (String(currentPlayerId) === String(player1Id)) ? p1Name : p2Name;
+  document.getElementById('currentPlayerLabel').innerText = label;
+}
+
+function appendDigit(d) {
+  if (currentInputValue.length >= 3) return; // max 3 čísla
+  currentInputValue += d;
+  document.getElementById('currentInput').innerText = currentInputValue || '0';
+}
+
+function clearInput() {
+  currentInputValue = '';
+  document.getElementById('currentInput').innerText = '0';
+}
+
+async function submitThrow() {
+  if (!currentInputValue) return;
+  const points = Number(currentInputValue);
+  const p1ScoreEl = document.getElementById('player1Score');
+  const p2ScoreEl = document.getElementById('player2Score');
+
+  let currentRemaining = (String(currentPlayerId) === String(player1Id))
+    ? Number(p1ScoreEl.innerText)
+    : Number(p2ScoreEl.innerText);
+
+  if (points > currentRemaining) {
+    document.getElementById('matchMsg').innerText = 'Nelze odečíst více než aktuální zbytek.';
+    return;
+  }
+
+  const newRemaining = currentRemaining - points;
+  let is_checkout = false;
+  let checkout_darts = null;
+
+  if (newRemaining === 0) {
+    // Zjednodušení: neřešíme DO logiku, jen se zeptáme na počet šipek
+    const darts = prompt('Na kolikátou šipku (1-3) jsi zavřel?', '3');
+    const dnum = Number(darts);
+    if (dnum < 1 || dnum > 3) {
+      document.getElementById('matchMsg').innerText = 'Neplatné číslo. Zadej hod znovu.';
+      return;
+    }
+    is_checkout = true;
+    checkout_darts = dnum;
+  }
+
+  // Uložit hod do Google Sheets
+  await apiCall({
+    action: 'addThrow',
+    match_id: currentMatchId,
+    leg_number: currentLegNumber,
+    player_id: currentPlayerId,
+    round_number: currentRoundNumber,
+    darts_thrown: 3, // zjednodušení: vždy 3 šipky
+    points_scored: points,
+    remaining_after: newRemaining,
+    is_checkout,
+    checkout_darts
+  });
+
+  // Aktualizovat UI
+  if (String(currentPlayerId) === String(player1Id)) {
+    p1ScoreEl.innerText = newRemaining;
+    currentPlayerId = player2Id;
+  } else {
+    p2ScoreEl.innerText = newRemaining;
+    currentPlayerId = player1Id;
+  }
+
+  updateCurrentPlayerLabel();
+
+  // pokud oba už házeli v tomto kole, posunout round_number
+  if (String(currentPlayerId) === String(startingPlayerIdForLeg())) {
+    currentRoundNumber++;
+    document.getElementById('roundNumber').innerText = currentRoundNumber;
+    // Tady by se řešil konec legu kvůli limitu kol, zatím vynecháno
+  }
+
+  clearInput();
+
+  if (is_checkout) {
+    alert('Leg uzavřen. (Logika na přechod na další leg zatím není dopsaná.)');
+  }
+}
+
+function startingPlayerIdForLeg() {
+  // jednoduché střídání podle čísla legu
+  // leg 1: startingPlayer, leg 2: druhý, leg 3: opět startingPlayer, atd.
+  const p1Start = startingPlayer === 'p1';
+  if (currentLegNumber % 2 === 1) {
+    return p1Start ? player1Id : player2Id;
+  } else {
+    return p1Start ? player2Id : player1Id;
+  }
+}
+
+async function undoThrow() {
+  if (!currentMatchId) return;
+  await apiCall({
+    action: 'undoLastThrow',
+    match_id: currentMatchId,
+    leg_number: currentLegNumber
+  });
+  // Přenačíst zbytky z API (jednoduché řešení)
+  const state = await apiCall({
+    action: 'getMatchState',
+    match_id: currentMatchId,
+    leg_number: currentLegNumber
+  });
+  document.getElementById('player1Score').innerText = state.player1_remaining ?? 501;
+  document.getElementById('player2Score').innerText = state.player2_remaining ?? 501;
+  document.getElementById('matchMsg').innerText = 'Poslední hod vrácen.';
+}
+
+function endMatch() {
+  alert('Ukončení zápasu a statistiky by se doprogramovaly. Zatím pouze demo.');
+  showScreen('menu');
+  currentMatchId = null;
+}
+</script>
+</body>
+</html>
