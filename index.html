@@ -1127,11 +1127,38 @@ function showMatchDetail(id){
   document.getElementById('matchDetailContent').innerHTML=html;
   showScreen('matchDetailScreen');
 }
+
+function recomputePlayersTotals() {
+  // vynulovat součty
+  state.players.forEach(p => {
+    p.totalPoints = 0;
+    p.totalDarts = 0;
+    p.totalMatches = 0;
+  });
+
+  // znovu spočítat ze všech zápasů
+  state.matches.forEach(match => {
+    const stats = computeMatchStats(match);
+    Object.keys(stats).forEach(idStr => {
+      const pid = Number(idStr);
+      const ps = stats[pid];
+      const p = state.players.find(x => x.id === pid);
+      if (!p) return;
+      p.totalPoints += ps.points;
+      p.totalDarts += ps.darts;
+      p.totalMatches = (p.totalMatches || 0) + 1;
+    });
+  });
+}
 function deleteMatch(id){
   const idx=state.matches.findIndex(x=>x.id===id);
   if(idx===-1){alert('Zápas nenalezen');return;}
   if(!confirm('Opravdu smazat tento zápas?'))return;
   state.matches.splice(idx,1);
+
+  // přepočítat hráčské statistiky po smazání zápasu
+  recomputePlayersTotals();
+
   saveState();
   showHistory();
 }
