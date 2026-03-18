@@ -1,368 +1,1152 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8">
-  <title>Šipky Liga</title>
+  <meta charset="UTF-8" />
+  <title>Allwyn Darts League – Tablet</title>
+  <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#1D4757">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+
   <style>
-    body { font-family: sans-serif; margin: 20px; }
-    .hidden { display: none; }
-    button { padding: 10px 20px; margin: 5px; font-size: 16px; }
-    input { padding: 5px; font-size: 16px; }
-    .big-score { font-size: 48px; font-weight: bold; margin: 10px; }
-    .player-box { display: inline-block; width: 45%; text-align: center; }
-    .keyboard button { width: 60px; height: 60px; font-size: 20px; }
+    :root{
+      --bg: #FEF8C9;
+      --bg-2: #FFF9D9;
+      --text: #1D4757;
+      --card: #FFFFFF;
+
+      --teal-900: #1D4757;
+      --teal-700: #2E5D6E;
+      --teal-600: #3C6E80;
+
+      --turq-600: #20D7C2;
+      --turq-500: #27E2CC;
+      --turq-400: #5DE9D9;
+      --turq-300: #93F0E5;
+
+      --ylw-600: #EBCB12;
+      --ylw-500: #FCE428;
+      --ylw-400: #FDEB5E;
+      --ylw-300: #FDF193;
+
+      --border: #C3CFD1;
+
+      --radius-s: 8px;
+      --radius-m: 12px;
+      --radius-l: 16px;
+
+      --shadow-1: 0 8px 24px rgba(0,0,0,.08);
+      --shadow-2: 0 16px 42px rgba(0,0,0,.16);
+    }
+
+    *{ box-sizing:border-box; }
+
+    html, body{
+      margin:0;
+      padding:0;
+      min-height:100%;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 600px at 90% -10%, color-mix(in srgb, var(--turq-300) 20%, transparent) , transparent 60%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+      overflow-x:hidden;
+    }
+
+    :focus-visible{
+      outline:3px solid var(--turq-500);
+      outline-offset:3px;
+      border-radius:10px;
+    }
+
+    .hidden{ display:none !important; }
+
+    .screen{
+      max-width:1200px;
+      margin:0 auto;
+      padding:20px 20px 32px;
+    }
+
+    h1,h2,h3{
+      margin:0 0 12px;
+      color:var(--teal-900);
+    }
+
+    button{
+      cursor:pointer;
+      border-radius:var(--radius-s);
+      border:1px solid var(--ylw-500);
+      background:linear-gradient(180deg, var(--ylw-500), var(--ylw-400));
+      color:var(--teal-900);
+      padding:8px 14px;
+      font-size:15px;
+      box-shadow:0 1px 0 rgba(255,255,255,.3) inset, var(--shadow-1);
+      transition:transform .06s ease, filter .12s ease, box-shadow .2s ease;
+    }
+    button:hover{ filter:brightness(1.05); }
+    button:active{ transform:translateY(1px) scale(.99); }
+    button:disabled{ opacity:.45; cursor:not-allowed; }
+
+    .btn-ghost{
+      background:color-mix(in srgb, var(--card) 80%, transparent);
+      border-color:var(--teal-900);
+      color:var(--teal-900);
+    }
+    .btn-danger{
+      background:#D64545;
+      border-color:#D64545;
+      color:#fff;
+    }
+
+    input,select{
+      padding:6px 8px;
+      font-size:15px;
+      border-radius:var(--radius-s);
+      border:1px solid var(--border);
+      background:var(--card);
+      color:var(--text);
+      box-shadow:0 1px 0 rgba(255,255,255,.35) inset, var(--shadow-1);
+    }
+
+    #menu .btn-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      margin-top:8px;
+    }
+
+    .card{
+      background:color-mix(in srgb, var(--card) 90%, rgba(255,255,255,.9));
+      border-radius:var(--radius-m);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow-1);
+      padding:14px 14px 10px;
+    }
+
+    table.simple{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      font-size:15px;
+    }
+    table.simple th, table.simple td{
+      padding:8px 10px;
+      border-bottom:1px solid var(--border);
+      text-align:left;
+    }
+    table.simple th{
+      background:color-mix(in srgb, var(--turq-300) 80%, #fff 20%);
+      color:var(--teal-900);
+      font-weight:700;
+      position:sticky;
+      top:0;
+      z-index:1;
+    }
+    table.simple tbody tr:hover{
+      background:color-mix(in srgb, var(--turq-300) 20%, transparent);
+    }
+
+    /* ===== MATCH SCREEN ===== */
+    #matchScreen{
+      max-width:none;
+      width:100%;
+      height:100vh;
+      display:flex;
+      flex-direction:column;
+      padding:10px 14px 14px;
+      gap:6px;
+    }
+
+/* TOP BAR – dvě poloviny, hráči */
+.match-top{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  height:175px;
+}
+
+.player-panel{
+  background:linear-gradient(180deg, var(--teal-900), var(--teal-700));
+  color:#fff;
+  border-radius:var(--radius-m);
+  border:1px solid rgba(0,0,0,.35);
+  box-shadow:var(--shadow-1);
+  padding:10px 16px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:4px;
+}
+
+.player-active{
+  background:linear-gradient(180deg, var(--turq-500), var(--turq-400));
+  box-shadow:0 0 18px rgba(255,255,255,0.35), inset 0 0 12px rgba(255,255,255,0.2);
+  border:2px solid var(--turq-600);
+}
+.player-name{
+  font-size:34px;
+  font-weight:800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.player-meta{
+  font-size:16px;
+  margin-top:4px;
+}
+.player-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:8px;
+}
+.player-score{
+  font-size:68px;
+  font-weight:900;
+  line-height:1;
+}
+#p1Score{ margin-left:auto; }  /* levý hráč – skóre vpravo */
+#p2Score{ margin-right:auto; } /* pravý hráč – skóre vlevo */
+
+    /* BOTTOM – keypad + pravý panel */
+    .match-bottom{
+      flex:1;
+      display:grid;
+      grid-template-columns: 2fr 1.3fr;
+      gap:10px;
+      min-height:0;
+    }
+
+    .keypad-card{
+      background:color-mix(in srgb, var(--card) 96%, rgba(255,255,255,.9));
+      border-radius:var(--radius-m);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow-1);
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .keypad-grid{
+      flex:1;
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0,1fr));
+      grid-template-rows:repeat(4, minmax(60px,1fr));
+      gap:8px;
+    }
+    .keypad-btn{
+      font-size:30px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:0;
+    }
+    .keypad-btn-secondary{
+      background:color-mix(in srgb, var(--card) 90%, rgba(0,0,0,.02));
+      border-color:var(--teal-900);
+      color:var(--teal-900);
+    }
+    .keypad-undo{ grid-column:1/2; grid-row:4/5; font-size:16px; }
+    .keypad-zero{ grid-column:2/3; grid-row:4/5; }
+    .keypad-clear{ grid-column:3/4; grid-row:4/5; }
+
+    /* RIGHT panel */
+    .enter-card{
+      background:linear-gradient(180deg, var(--teal-900), var(--teal-700));
+      border-radius:var(--radius-m);
+      border:1px solid rgba(0,0,0,.4);
+      box-shadow:var(--shadow-2);
+      color:#fff;
+      padding:10px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .round-info{
+      font-size:15px;
+      padding:4px 6px;
+      border-radius:var(--radius-s);
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(0,0,0,.3);
+    }
+    .match-msg{
+      min-height:32px;
+      font-size:14px;
+      color:var(--ylw-400);
+    }
+    .enter-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+    }
+    .enter-actions button{
+      font-size:13px;
+      padding:5px 8px;
+    }
+    .checkout-buttons{
+      display:flex;
+      gap:8px;
+      margin-top:auto;     /* můžeš dát klidně 2px nebo 0px */
+      margin-bottom:4px;  /* přidáme spodní margin, aby sedla k ENTER */
+    }
+    .checkout-buttons button{
+      flex:1;
+      padding:10px 4px;
+      font-size:18px;
+      background:linear-gradient(180deg, var(--turq-500), var(--turq-400));
+      border-color:var(--turq-500);
+    }
+
+    .enter-display{
+      margin-top:0;
+      background:rgba(0,0,0,.18);
+      border-radius:var(--radius-m);
+      border:1px solid rgba(0,0,0,.35);
+      padding:10px 14px;
+      min-height:200px;  
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      cursor:pointer;
+    }
+    .enter-label{
+      font-size:13px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      opacity:.9;
+      text-align:right;
+    }
+    .enter-value{
+      font-size:48px;
+      font-weight:900;
+      text-align:right;
+      margin-top:2px;
+    }
+
+    @media (max-aspect-ratio:4/3){
+      #matchScreen{ height:auto; }
+      .match-bottom{
+        grid-template-columns:1fr;
+        grid-template-rows:auto auto;
+      }
+    }
   </style>
 </head>
 <body>
 
-<h1>Šipkařská liga</h1>
-
-<div id="menu">
-  <button onclick="showScreen('addPlayerScreen')">Nový hráč</button>
-  <button onclick="initNewMatch()">Nový zápas</button>
-</div>
-
-<!-- Přidání hráče -->
-<div id="addPlayerScreen" class="hidden">
-  <h2>Nový hráč</h2>
-  <input type="text" id="playerName" placeholder="Jméno hráče">
-  <button onclick="addPlayer()">Uložit hráče</button>
-  <button onclick="showScreen('menu')">Zpět</button>
-  <div id="addPlayerMsg"></div>
-</div>
-
-<!-- Nový zápas -->
-<div id="newMatchScreen" class="hidden">
-  <h2>Nový zápas</h2>
-  <label>Hráč 1:
-    <select id="player1Select"></select>
-  </label><br><br>
-  <label>Hráč 2:
-    <select id="player2Select"></select>
-  </label><br><br>
-  <label>
-    Finále?
-    <input type="checkbox" id="isFinalCheckbox">
-  </label><br><br>
-  <div>
-    Kdo začíná?<br>
-    <button id="startP1Btn" onclick="setStartingPlayer('p1')">Začíná hráč 1</button>
-    <button id="startP2Btn" onclick="setStartingPlayer('p2')">Začíná hráč 2</button>
+<!-- MENU -->
+<div id="menu" class="screen">
+  <h1>Allwyn Darts League</h1>
+  <div class="btn-row">
+    <button onclick="showScreen('playersScreen')">Seznam hráčů</button>
+    <button onclick="showScreen('newMatchScreen')">Zahájit zápas</button>
+    <button onclick="showHistory()">Historie zápasů</button>
   </div>
-  <br>
-  <button onclick="createMatch()">Zahájit zápas</button>
-  <button onclick="showScreen('menu')">Zpět</button>
-  <div id="newMatchMsg"></div>
 </div>
 
-<!-- Obrazovka zápasu -->
+<!-- HRÁČI -->
+<div id="playersScreen" class="screen hidden">
+  <h2>Hráči</h2>
+  <div class="card">
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; align-items:center;">
+      <input type="text" id="playerNameInput" placeholder="Jméno nového hráče" />
+      <button onclick="addPlayer()">Přidat hráče</button>
+      <button class="btn-ghost" onclick="showScreen('menu')">Zpět</button>
+    </div>
+    <table class="simple">
+      <thead>
+        <tr>
+          <th>Jméno</th>
+          <th>Ø / 3 šipky</th>
+          <th>Zápasů</th>
+          <th>Smazat</th>
+        </tr>
+      </thead>
+      <tbody id="playersTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- NOVÝ ZÁPAS -->
+<div id="newMatchScreen" class="screen hidden">
+  <h2>Zahájit zápas</h2>
+  <div class="card">
+    <div style="display:flex; flex-wrap:wrap; gap:16px;">
+      <div>
+        <label>Hráč 1:<br>
+          <select id="player1Select"></select>
+        </label>
+      </div>
+      <div>
+        <label>Hráč 2:<br>
+          <select id="player2Select"></select>
+        </label>
+      </div>
+      <div>
+        <label><input type="checkbox" id="isFinalCheckbox"> Finále (na 3 legy)</label>
+      </div>
+<div>
+  <div>Kdo začíná?</div>
+  <label style="display:inline-flex; align-items:center; gap:4px; margin-right:12px;">
+    <input type="radio" name="startingPlayer" value="p1" id="startingPlayerP1"
+           onchange="setStartingPlayer('p1')">
+    Hráč 1
+  </label>
+  <label style="display:inline-flex; align-items:center; gap:4px;">
+    <input type="radio" name="startingPlayer" value="p2" id="startingPlayerP2"
+           onchange="setStartingPlayer('p2')">
+    Hráč 2
+  </label>
+</div>
+    </div>
+    <div style="margin-top:16px; display:flex; gap:8px;">
+      <button onclick="createMatch()">Zahájit zápas</button>
+      <button class="btn-ghost" onclick="showScreen('menu')">Zpět</button>
+    </div>
+    <div id="newMatchMsg" style="margin-top:8px; color:#B22;"></div>
+  </div>
+</div>
+
+<!-- HISTORIE -->
+<div id="historyScreen" class="screen hidden">
+  <h2>Historie zápasů</h2>
+  <div class="card">
+    <table class="simple">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Hráč 1</th>
+          <th>Hráč 2</th>
+          <th>Výsledek</th>
+          <th>Vítěz</th>
+          <th>Detail</th>
+          <th>Smazat</th>
+        </tr>
+      </thead>
+      <tbody id="historyTableBody"></tbody>
+    </table>
+    <div style="margin-top:10px;">
+      <button class="btn-ghost" onclick="showScreen('menu')">Zpět</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL ZÁPASU -->
+<div id="matchDetailScreen" class="screen hidden">
+  <h2>Detail zápasu</h2>
+  <div class="card" id="matchDetailContent"></div>
+  <div style="margin-top:10px;">
+    <button class="btn-ghost" onclick="showScreen('historyScreen')">Zpět na historii</button>
+  </div>
+</div>
+
+<!-- MATCH SCREEN -->
 <div id="matchScreen" class="hidden">
-  <h2>Zápas</h2>
-  <div id="matchInfo"></div>
-  <div>
-    <div class="player-box">
-      <div id="player1Name"></div>
-      <div class="big-score" id="player1Score">501</div>
+  <!-- TOP hráči -->
+  <div class="match-top">
+    <div class="player-panel" id="p1Panel">
+      <div>
+        <div class="player-name" id="p1Name">Hráč 1</div>
+        <div class="player-meta">
+          <span id="p1Avg">-</span>
+        </div>
+      </div>
+      <div class="player-row">
+        <div class="player-score" id="p1Score">501</div>
+      </div>
     </div>
-    <div class="player-box">
-      <div id="player2Name"></div>
-      <div class="big-score" id="player2Score">501</div>
-    </div>
-  </div>
-
-  <div>
-    Kolo: <span id="roundNumber">1</span> /
-    <span id="maxRounds">15</span>,
-    Leg: <span id="legNumber">1</span>
-  </div>
-
-  <div>
-    Na tahu: <span id="currentPlayerLabel"></span>
-  </div>
-
-  <div>
-    Zadaný hod: <span id="currentInput">0</span>
-  </div>
-
-  <div class="keyboard">
-    <div>
-      <button onclick="appendDigit('1')">1</button>
-      <button onclick="appendDigit('2')">2</button>
-      <button onclick="appendDigit('3')">3</button>
-    </div>
-    <div>
-      <button onclick="appendDigit('4')">4</button>
-      <button onclick="appendDigit('5')">5</button>
-      <button onclick="appendDigit('6')">6</button>
-    </div>
-    <div>
-      <button onclick="appendDigit('7')">7</button>
-      <button onclick="appendDigit('8')">8</button>
-      <button onclick="appendDigit('9')">9</button>
-    </div>
-    <div>
-      <button onclick="appendDigit('0')">0</button>
-      <button onclick="clearInput()">C</button>
-      <button onclick="submitThrow()">OK</button>
+    <div class="player-panel" id="p2Panel">
+      <div>
+        <div class="player-name" style="text-align:right;" id="p2Name">Hráč 2</div>
+        <div class="player-meta" style="text-align:right;">
+          <span id="p2Avg">-</span>
+        </div>
+      </div>
+      <div class="player-row">
+        <div class="player-score" id="p2Score">501</div>
+      </div>
     </div>
   </div>
+<div class="status-row hidden">
+  <div>Kolo: <span id="roundNumber">1</span></div>
+  <div>Skóre: <span id="legsScore">0 : 0</span></div>
+  <div></div>
+</div>
 
-  <button onclick="undoThrow()">Vrátit poslední hod</button>
-  <button onclick="endMatch()">Ukončit zápas</button>
+  <!-- BOTTOM -->
+  <div class="match-bottom">
+    <!-- LEVÁ: klávesnice -->
+    <div class="keypad-card">
+      <div class="keypad-grid">
+        <button class="keypad-btn" onclick="appendDigit(1)">1</button>
+        <button class="keypad-btn" onclick="appendDigit(2)">2</button>
+        <button class="keypad-btn" onclick="appendDigit(3)">3</button>
 
-  <div id="matchMsg"></div>
+        <button class="keypad-btn" onclick="appendDigit(4)">4</button>
+        <button class="keypad-btn" onclick="appendDigit(5)">5</button>
+        <button class="keypad-btn" onclick="appendDigit(6)">6</button>
+
+        <button class="keypad-btn" onclick="appendDigit(7)">7</button>
+        <button class="keypad-btn" onclick="appendDigit(8)">8</button>
+        <button class="keypad-btn" onclick="appendDigit(9)">9</button>
+
+        <button class="keypad-btn keypad-btn-secondary keypad-undo" onclick="undoThrow()">Vrátit hod</button>
+        <button class="keypad-btn keypad-zero" onclick="appendDigit(0)">0</button>
+        <button class="keypad-btn keypad-btn-secondary keypad-clear" onclick="clearInput()">C</button>
+      </div>
+    </div>
+
+    <!-- PRAVÁ: info + checkout + enter -->
+    <div class="enter-card">
+      <div class="round-info">
+        Kolo: <span id="roundInfoRound">1</span> &nbsp;|&nbsp;
+        Skóre: <span id="roundInfoLegs">0 : 0</span>
+      </div>
+
+      <div class="match-msg" id="matchMsg"></div>
+
+      <div class="enter-actions">
+        <button class="btn-danger" onclick="endMatch()">Ukončit zápas</button>
+      </div>
+
+      <!-- checkout 1/2/3 -->
+      <div class="checkout-buttons" id="checkoutButtons">
+        <button id="btnCheckout1" onclick="checkoutWithDarts(1)" disabled>1 šipka</button>
+        <button id="btnCheckout2" onclick="checkoutWithDarts(2)" disabled>2 šipky</button>
+        <button id="btnCheckout3" onclick="checkoutWithDarts(3)" disabled>3 šipky</button>
+      </div>
+
+      <div class="enter-display" onclick="submitThrow()">
+        <div class="enter-label">ENTER SCORE</div>
+        <div class="enter-value" id="currentInput">0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS SCREEN -->
+<div id="statsScreen" class="screen hidden">
+  <h2>Statistiky zápasu</h2>
+  <div class="card" id="statsContent"></div>
+  <div style="margin-top:10px;">
+    <button class="btn-ghost" onclick="showScreen('menu')">Zpět do menu</button>
+  </div>
 </div>
 
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbxaMBhmOuCRQaZdfulz-7VHGtuwvz934qOwFZ7pZuyxQymQ3BCw9CcT8keBxxFxypVB/exec';
+const STORAGE_KEY='dartsLeagueTablet_v6';
 
-let players = [];
-let startingPlayer = null; // 'p1' nebo 'p2'
-let currentMatchId = null;
-let currentLegNumber = 1;
-let currentRoundNumber = 1;
-let maxRounds = 15;
-let isFinal = false;
-let player1Id = null;
-let player2Id = null;
-let currentPlayerId = null;
-let currentInputValue = '';
+let state={players:[],matches:[],nextPlayerId:1,nextMatchId:1};
+let currentMatch=null;
+let currentLegIndex=0;
+let currentRoundNumber=1;
+let currentPlayerId=null;
+let currentInputValue='';
+let startingPlayerSide=null;
+let lastThrow=null;
 
-function showScreen(id) {
-  document.getElementById('menu').classList.add('hidden');
-  document.getElementById('addPlayerScreen').classList.add('hidden');
-  document.getElementById('newMatchScreen').classList.add('hidden');
-  document.getElementById('matchScreen').classList.add('hidden');
-  document.getElementById(id).classList.remove('hidden');
+function loadState(){
+  const raw=localStorage.getItem(STORAGE_KEY);
+  if(raw){ try{state=JSON.parse(raw);}catch(e){console.error(e);} }
+}
+function saveState(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
 }
 
-async function apiCall(body) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
+function showScreen(id){
+  const ids=['menu','playersScreen','newMatchScreen','historyScreen','matchDetailScreen','matchScreen','statsScreen'];
+  ids.forEach(x=>{
+    const el=document.getElementById(x);
+    if(!el)return;
+    if(x===id)el.classList.remove('hidden');else el.classList.add('hidden');
+  });
+  if(id==='playersScreen')renderPlayers();
+  if(id==='newMatchScreen')initNewMatchScreen();
+  if(id==='historyScreen')showHistory();
+}
+
+/* PLAYERS */
+function renderPlayers(){
+  const tbody=document.getElementById('playersTableBody');
+  tbody.innerHTML='';
+  const sorted=state.players.slice().sort((a,b)=>a.name.localeCompare(b.name,'cs'));
+  sorted.forEach(p=>{
+    const avg=p.totalDarts?((p.totalPoints/p.totalDarts)*3).toFixed(2):'-';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${p.name}</td>
+      <td>${avg}</td>
+      <td>${p.totalMatches||0}</td>
+      <td><button class="btn-danger" onclick="deletePlayer(${p.id})">Smazat</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function addPlayer(){
+  const inp=document.getElementById('playerNameInput');
+  const name=inp.value.trim();
+  if(!name)return;
+  const id=state.nextPlayerId++;
+  state.players.push({id,name,totalPoints:0,totalDarts:0,totalMatches:0});
+  saveState(); inp.value=''; renderPlayers();
+}
+function deletePlayer(id){
+  if(!confirm('Opravdu smazat hráče?'))return;
+  state.players=state.players.filter(p=>p.id!==id);
+  saveState(); renderPlayers();
+}
+
+/* NEW MATCH */
+function initNewMatchScreen(){
+  document.getElementById('newMatchMsg').innerText = state.players.length<2
+    ? 'Musí existovat alespoň dva hráči.' : '';
+
+  const p1Sel=document.getElementById('player1Select');
+  const p2Sel=document.getElementById('player2Select');
+  p1Sel.innerHTML=''; 
+  p2Sel.innerHTML='';
+
+  const sorted=state.players.slice().sort((a,b)=>a.name.localeCompare(b.name,'cs'));
+  sorted.forEach(p=>{
+    const o1=document.createElement('option');
+    o1.value=p.id;
+    o1.textContent=p.name;
+    p1Sel.appendChild(o1);
+
+    const o2=document.createElement('option');
+    o2.value=p.id;
+    o2.textContent=p.name;
+    p2Sel.appendChild(o2);
   });
 
-  const text = await res.text();
-  console.log('API response text:', text);   // pro kontrolu v konzoli
+  startingPlayerSide=null;
 
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    console.error('Response parse error', e);
-    return {};
-  }
+  // vynulovat radio volbu
+  const r1 = document.getElementById('startingPlayerP1');
+  const r2 = document.getElementById('startingPlayerP2');
+  if (r1) r1.checked = false;
+  if (r2) r2.checked = false;
 }
+function setStartingPlayer(side){ startingPlayerSide=side; }
 
-// ---- Přidání hráče ----
-async function addPlayer() {
-  const name = document.getElementById('playerName').value.trim();
-  if (!name) return;
-  const result = await apiCall({action: 'addPlayer', name});
-  document.getElementById('addPlayerMsg').innerText = 'Hráč uložen.';
-  document.getElementById('playerName').value = '';
+/* GAME LOGIC */
+const IMPOSSIBLE_SCORES=new Set([179,178,176,175,173,172,169,166,163]);
+const INVALID_CHECKOUT_REMAINS=new Set([169,168,166,165,163,162,159]);
+
+function isValidScore(points){
+  if(points<0||points>180)return false;
+  if(IMPOSSIBLE_SCORES.has(points))return false;
+  return true;
 }
-
-// Načtení hráčů do selectu
-async function initNewMatch() {
-  const res = await apiCall({action: 'getPlayers'});
-  players = res.players || [];
-  const p1Select = document.getElementById('player1Select');
-  const p2Select = document.getElementById('player2Select');
-  p1Select.innerHTML = '';
-  p2Select.innerHTML = '';
-  players.forEach(p => {
-    const opt1 = document.createElement('option');
-    opt1.value = p.id;
-    opt1.textContent = p.name;
-    p1Select.appendChild(opt1);
-
-    const opt2 = document.createElement('option');
-    opt2.value = p.id;
-    opt2.textContent = p.name;
-    p2Select.appendChild(opt2);
-  });
-  startingPlayer = null;
-  document.getElementById('newMatchMsg').innerText = '';
-  showScreen('newMatchScreen');
+function canCheckoutTo(newRem){
+  if(newRem<0)return false;
+  if(newRem===1)return false;
+  if(newRem>170)return false;
+  if(INVALID_CHECKOUT_REMAINS.has(newRem))return false;
+  return true;
 }
+function getPossibleCheckoutDarts(rem) {
+  const possible = new Set();
 
-function setStartingPlayer(which) {
-  startingPlayer = which; // 'p1' nebo 'p2'
-}
-
-// Vytvoření zápasu
-async function createMatch() {
-  const p1 = document.getElementById('player1Select').value;
-  const p2 = document.getElementById('player2Select').value;
-  isFinal = document.getElementById('isFinalCheckbox').checked;
-  if (!p1 || !p2 || p1 === p2) {
-    document.getElementById('newMatchMsg').innerText = 'Vyber dva různé hráče.';
-    return;
-  }
-  if (!startingPlayer) {
-    document.getElementById('newMatchMsg').innerText = 'Vyber, kdo začíná.';
-    return;
+  // Pokud obecně nejde zavřít (double-out + max 170), nic nepovolujeme
+  if (!canCheckoutTo(rem)) {
+    return possible;
   }
 
-  const startingPlayerId = startingPlayer === 'p1' ? p1 : p2;
+  // 1 šipka – double 1–20 + bull (50)
+  if (
+    (rem % 2 === 0 && rem >= 2 && rem <= 40) || // D1–D20
+    rem === 50
+  ) {
+    possible.add(1);
+  }
 
-  const res = await apiCall({
-    action: 'createMatch',
-    player1_id: p1,
-    player2_id: p2,
-    is_final: isFinal,
-    starting_player_id: startingPlayerId
-  });
+  // 2 šipky
+  // vámi požadovaná logika: 110, 107, 104, 101, 100 a všechno < 99
+  const twoDartSpecials = new Set([110, 107, 104, 101, 100]);
+  if (rem < 99 || twoDartSpecials.has(rem)) {
+    possible.add(2);
+  }
 
-  currentMatchId = res.id;
-  player1Id = p1;
-  player2Id = p2;
-  currentLegNumber = 1;
-  currentRoundNumber = 1;
-  maxRounds = 15;
-  currentPlayerId = startingPlayerId;
+  // 3 šipky – všechno ostatní validní do 170
+  if (rem >= 2 && rem <= 170) {
+    possible.add(3);
+  }
 
-  // nastavit UI
-  document.getElementById('legNumber').innerText = currentLegNumber;
-  document.getElementById('roundNumber').innerText = currentRoundNumber;
-  document.getElementById('maxRounds').innerText = maxRounds;
+  return possible;
+}
 
-  const p1Name = players.find(p => String(p.id) === String(player1Id))?.name || 'Hráč 1';
-  const p2Name = players.find(p => String(p.id) === String(player2Id))?.name || 'Hráč 2';
-  document.getElementById('player1Name').innerText = p1Name;
-  document.getElementById('player2Name').innerText = p2Name;
+function getLegMaxRounds(legNumber,isFinal){
+  if(!isFinal)return legNumber<=2?15:20;
+  return legNumber<=4?15:20;
+}
+function getNeededLegsToWin(isFinal){return isFinal?3:2;}
 
-  document.getElementById('player1Score').innerText = '501';
-  document.getElementById('player2Score').innerText = '501';
+function createMatch(){
+  const p1=Number(document.getElementById('player1Select').value);
+  const p2=Number(document.getElementById('player2Select').value);
+  const isFinal=document.getElementById('isFinalCheckbox').checked;
+  const msgEl=document.getElementById('newMatchMsg');
 
-  updateCurrentPlayerLabel();
+  if(!p1||!p2||p1===p2){msgEl.innerText='Vyber dva různé hráče.';return;}
+  if(!startingPlayerSide){msgEl.innerText='Vyber, kdo začíná.';return;}
+
+  const matchId=state.nextMatchId++;
+  const startingPlayerId=(startingPlayerSide==='p1')?p1:p2;
+  const maxRounds=getLegMaxRounds(1,isFinal);
+
+  currentMatch={
+    id:matchId,
+    player1Id:p1,
+    player2Id:p2,
+    isFinal,
+    startingPlayerId,
+    legs:[{startingPlayerId,throws:[],winnerId:null,maxRounds}],
+    winnerId:null
+  };
+  currentLegIndex=0;
+  currentRoundNumber=1;
+  currentPlayerId=startingPlayerId;
+  currentInputValue='';
+  lastThrow=null;
+
+  initMatchUI();
   showScreen('matchScreen');
 }
 
-function updateCurrentPlayerLabel() {
-  const p1Name = document.getElementById('player1Name').innerText;
-  const p2Name = document.getElementById('player2Name').innerText;
-  const label = (String(currentPlayerId) === String(player1Id)) ? p1Name : p2Name;
-  document.getElementById('currentPlayerLabel').innerText = label;
-}
-
-function appendDigit(d) {
-  if (currentInputValue.length >= 3) return; // max 3 čísla
-  currentInputValue += d;
-  document.getElementById('currentInput').innerText = currentInputValue || '0';
-}
-
-function clearInput() {
-  currentInputValue = '';
-  document.getElementById('currentInput').innerText = '0';
-}
-
-async function submitThrow() {
-  if (!currentInputValue) return;
-  const points = Number(currentInputValue);
-  const p1ScoreEl = document.getElementById('player1Score');
-  const p2ScoreEl = document.getElementById('player2Score');
-
-  let currentRemaining = (String(currentPlayerId) === String(player1Id))
-    ? Number(p1ScoreEl.innerText)
-    : Number(p2ScoreEl.innerText);
-
-  if (points > currentRemaining) {
-    document.getElementById('matchMsg').innerText = 'Nelze odečíst více než aktuální zbytek.';
+function updateActivePlayerUI() {
+  const p1Panel = document.getElementById('p1Panel');
+  const p2Panel = document.getElementById('p2Panel');
+  if (!p1Panel || !p2Panel || !currentMatch) {
+    if (p1Panel) p1Panel.classList.remove('player-active');
+    if (p2Panel) p2Panel.classList.remove('player-active');
     return;
   }
 
-  const newRemaining = currentRemaining - points;
-  let is_checkout = false;
-  let checkout_darts = null;
+  p1Panel.classList.toggle('player-active', currentPlayerId === currentMatch.player1Id);
+  p2Panel.classList.toggle('player-active', currentPlayerId === currentMatch.player2Id);
+}
 
-  if (newRemaining === 0) {
-    // Zjednodušení: neřešíme DO logiku, jen se zeptáme na počet šipek
-    const darts = prompt('Na kolikátou šipku (1-3) jsi zavřel?', '3');
-    const dnum = Number(darts);
-    if (dnum < 1 || dnum > 3) {
-      document.getElementById('matchMsg').innerText = 'Neplatné číslo. Zadej hod znovu.';
-      return;
-    }
-    is_checkout = true;
-    checkout_darts = dnum;
+function updateCheckoutButtons() {
+  const btn1 = document.getElementById('btnCheckout1');
+  const btn2 = document.getElementById('btnCheckout2');
+  const btn3 = document.getElementById('btnCheckout3');
+
+  // defaultně vše vypneme
+  btn1.disabled = btn2.disabled = btn3.disabled = true;
+
+  if (!currentMatch) return;
+
+  const s1 = Number(document.getElementById('p1Score').innerText);
+  const s2 = Number(document.getElementById('p2Score').innerText);
+  const currentRem = (currentPlayerId === currentMatch.player1Id) ? s1 : s2;
+
+  const possible = getPossibleCheckoutDarts(currentRem);
+
+  btn1.disabled = !possible.has(1);
+  btn2.disabled = !possible.has(2);
+  btn3.disabled = !possible.has(3);
+}
+
+function initMatchUI(){
+  const p1=state.players.find(x=>x.id===currentMatch.player1Id);
+  const p2=state.players.find(x=>x.id===currentMatch.player2Id);
+  document.getElementById('p1Name').innerText=p1?p1.name:'Hráč 1';
+  document.getElementById('p2Name').innerText=p2?p2.name:'Hráč 2';
+  document.getElementById('p1Score').innerText='501';
+  document.getElementById('p2Score').innerText='501';
+  document.getElementById('legsScore').innerText='0 : 0';
+  document.getElementById('roundNumber').innerText='1';
+  document.getElementById('roundInfoRound').innerText='1';
+  document.getElementById('roundInfoLegs').innerText='0 : 0';
+  document.getElementById('currentInput').innerText='0';
+  document.getElementById('matchMsg').innerText='';
+  document.getElementById('p1Avg').innerText='-';
+  document.getElementById('p2Avg').innerText='-';
+  updateActivePlayerUI();
+  updateCheckoutButtons();
+}
+
+/* KEYPAD */
+function appendDigit(d){
+  if(currentInputValue.length>=3)return;
+  currentInputValue=currentInputValue+String(d);
+  if(Number(currentInputValue)>180)currentInputValue=String(d);
+  document.getElementById('currentInput').innerText=currentInputValue||'0';
+}
+function clearInput(){
+  currentInputValue='';
+  document.getElementById('currentInput').innerText='0';
+}
+
+/* SUBMIT – jen pro běžný hod, ne checkout */
+function submitThrow(){
+  const msgEl=document.getElementById('matchMsg');
+  msgEl.innerText='';
+  if(!currentInputValue){msgEl.innerText='Zadej hod.';return;}
+  const pts=Number(currentInputValue);
+  if(!isValidScore(pts)){msgEl.innerText='Tento nához není možný.';return;}
+
+  const s1El=document.getElementById('p1Score');
+  const s2El=document.getElementById('p2Score');
+  const currentRem=(currentPlayerId===currentMatch.player1Id)?Number(s1El.innerText):Number(s2El.innerText);
+  if(pts>currentRem){msgEl.innerText='Nelze odečíst více než aktuální zbytek.';return;}
+  let newRem=currentRem-pts;
+
+  if(newRem<=0){
+    msgEl.innerText='Pro checkout použij tlačítka 1/2/3 šipky.';return;
   }
+  if(newRem===1){
+    msgEl.innerText='V double-outu nemůže zůstat 1 bod.';return;
+  }
+  applyThrowInternal(pts,newRem,3,false);
+}
 
-  // Uložit hod do Google Sheets
-  await apiCall({
-    action: 'addThrow',
-    match_id: currentMatchId,
-    leg_number: currentLegNumber,
-    player_id: currentPlayerId,
-    round_number: currentRoundNumber,
-    darts_thrown: 3, // zjednodušení: vždy 3 šipky
-    points_scored: points,
-    remaining_after: newRemaining,
-    is_checkout,
-    checkout_darts
+function checkoutWithDarts(dartsUsed){
+  const msgEl=document.getElementById('matchMsg');
+  msgEl.innerText='';
+  if(!currentMatch)return;
+  const s1El=document.getElementById('p1Score');
+  const s2El=document.getElementById('p2Score');
+  const currentRem=(currentPlayerId===currentMatch.player1Id)?Number(s1El.innerText):Number(s2El.innerText);
+
+  if(!canCheckoutTo(currentRem)){
+    msgEl.innerText='Checkout z tohoto zbytku není možný.';return;
+  }
+  const pts=currentRem;
+  const newRem=0;
+  applyThrowInternal(pts,newRem,dartsUsed,true);
+}
+
+function applyThrowInternal(pts,newRem,dartsThisThrow,isCheckout){
+  const leg=currentMatch.legs[currentLegIndex];
+  leg.throws.push({
+    playerId:currentPlayerId,
+    round:currentRoundNumber,
+    points:pts,
+    remainingAfter:newRem,
+    dartsThisThrow
   });
+  lastThrow=leg.throws[leg.throws.length-1];
 
-  // Aktualizovat UI
-  if (String(currentPlayerId) === String(player1Id)) {
-    p1ScoreEl.innerText = newRemaining;
-    currentPlayerId = player2Id;
-  } else {
-    p2ScoreEl.innerText = newRemaining;
-    currentPlayerId = player1Id;
-  }
+  const s1El=document.getElementById('p1Score');
+  const s2El=document.getElementById('p2Score');
+  if(currentPlayerId===currentMatch.player1Id)s1El.innerText=newRem;
+  else s2El.innerText=newRem;
 
-  updateCurrentPlayerLabel();
-
-  // pokud oba už házeli v tomto kole, posunout round_number
-  if (String(currentPlayerId) === String(startingPlayerIdForLeg())) {
+  const starter=leg.startingPlayerId;
+  currentPlayerId=(currentPlayerId===currentMatch.player1Id)?currentMatch.player2Id:currentMatch.player1Id;
+  if(currentPlayerId===starter){
     currentRoundNumber++;
-    document.getElementById('roundNumber').innerText = currentRoundNumber;
-    // Tady by se řešil konec legu kvůli limitu kol, zatím vynecháno
+    document.getElementById('roundNumber').innerText=String(currentRoundNumber);
+    document.getElementById('roundInfoRound').innerText=String(currentRoundNumber);
   }
 
   clearInput();
+  updateLiveAverages();
+  document.getElementById('matchMsg').innerText='';
+  updateActivePlayerUI();
+  updateCheckoutButtons();
 
-  if (is_checkout) {
-    alert('Leg uzavřen. (Logika na přechod na další leg zatím není dopsaná.)');
-  }
-}
-
-function startingPlayerIdForLeg() {
-  // jednoduché střídání podle čísla legu
-  // leg 1: startingPlayer, leg 2: druhý, leg 3: opět startingPlayer, atd.
-  const p1Start = startingPlayer === 'p1';
-  if (currentLegNumber % 2 === 1) {
-    return p1Start ? player1Id : player2Id;
+  if(isCheckout){
+    leg.winnerId=lastThrow.playerId;
+    handleLegFinished(lastThrow.playerId);
   } else {
-    return p1Start ? player2Id : player1Id;
+    if(currentRoundNumber>leg.maxRounds)handleLegEndByRounds();
   }
 }
 
-async function undoThrow() {
-  if (!currentMatchId) return;
-  await apiCall({
-    action: 'undoLastThrow',
-    match_id: currentMatchId,
-    leg_number: currentLegNumber
+/* LEG END / MATCH END */
+function countLegWins(match,pid){
+  return match.legs.filter(l=>l.winnerId===pid).length;
+}
+function handleLegEndByRounds(){
+  const leg=currentMatch.legs[currentLegIndex];
+  let p1Rem=501,p2Rem=501;
+  leg.throws.forEach(t=>{
+    if(t.playerId===currentMatch.player1Id)p1Rem=t.remainingAfter;
+    if(t.playerId===currentMatch.player2Id)p2Rem=t.remainingAfter;
   });
-  // Přenačíst zbytky z API (jednoduché řešení)
-  const state = await apiCall({
-    action: 'getMatchState',
-    match_id: currentMatchId,
-    leg_number: currentLegNumber
-  });
-  document.getElementById('player1Score').innerText = state.player1_remaining ?? 501;
-  document.getElementById('player2Score').innerText = state.player2_remaining ?? 501;
-  document.getElementById('matchMsg').innerText = 'Poslední hod vrácen.';
+  let winnerId=null;
+  if(p1Rem<p2Rem)winnerId=currentMatch.player1Id;
+  else if(p2Rem<p1Rem)winnerId=currentMatch.player2Id;
+  else{
+    const p1Name=state.players.find(x=>x.id===currentMatch.player1Id)?.name||'1';
+    const p2Name=state.players.find(x=>x.id===currentMatch.player2Id)?.name||'2';
+    const ch=prompt(`Zbytky stejné. Kdo vyhrál rozhoz?\n1 = ${p1Name}, 2 = ${p2Name}`,'1');
+    if(ch==='1')winnerId=currentMatch.player1Id;
+    else if(ch==='2')winnerId=currentMatch.player2Id;
+    else{alert('Neplatná volba.');return;}
+  }
+  leg.winnerId=winnerId;
+  handleLegFinished(winnerId);
+}
+function handleLegFinished(winnerId){
+  const need=getNeededLegsToWin(currentMatch.isFinal);
+  const p1W=countLegWins(currentMatch,currentMatch.player1Id);
+  const p2W=countLegWins(currentMatch,currentMatch.player2Id);
+  document.getElementById('legsScore').innerText=`${p1W} : ${p2W}`;
+  document.getElementById('roundInfoLegs').innerText=`${p1W} : ${p2W}`;
+  if(p1W>=need || p2W>=need){
+    currentMatch.winnerId=p1W>p2W?currentMatch.player1Id:currentMatch.player2Id;
+    finishMatch();
+  }else{
+    startNextLeg();
+  }
+}
+function startNextLeg(){
+  const nextLegNum=currentLegIndex+2;
+  const maxRounds=getLegMaxRounds(nextLegNum,currentMatch.isFinal);
+  const baseStarter=currentMatch.startingPlayerId;
+  const other=(baseStarter===currentMatch.player1Id)?currentMatch.player2Id:currentMatch.player1Id;
+  const startingId=(nextLegNum%2===1)?baseStarter:other;
+
+  currentMatch.legs.push({startingPlayerId:startingId,throws:[],winnerId:null,maxRounds});
+  currentLegIndex++;
+  currentRoundNumber=1;
+  currentPlayerId=startingId;
+  currentInputValue='';
+  lastThrow=null;
+
+  document.getElementById('roundNumber').innerText='1';
+  document.getElementById('roundInfoRound').innerText='1';
+  document.getElementById('p1Score').innerText='501';
+  document.getElementById('p2Score').innerText='501';
+  document.getElementById('currentInput').innerText='0';
+  document.getElementById('matchMsg').innerText='';
+  updateLiveAverages();
+  updateActivePlayerUI();
+  updateCheckoutButtons();
 }
 
-function endMatch() {
-  alert('Ukončení zápasu a statistiky by se doprogramovaly. Zatím pouze demo.');
-  showScreen('menu');
-  currentMatchId = null;
+/* UNDO / END MATCH */
+function undoThrow(){
+  const leg=currentMatch.legs[currentLegIndex];
+  if(!leg.throws.length){
+    document.getElementById('matchMsg').innerText='Není co vracet.';return;
+  }
+  leg.throws.pop();
+  lastThrow=leg.throws[leg.throws.length-1]||null;
+  let p1Rem=501,p2Rem=501;
+  leg.throws.forEach(t=>{
+    if(t.playerId===currentMatch.player1Id)p1Rem=t.remainingAfter;
+    if(t.playerId===currentMatch.player2Id)p2Rem=t.remainingAfter;
+  });
+  document.getElementById('p1Score').innerText=p1Rem;
+  document.getElementById('p2Score').innerText=p2Rem;
+  if(lastThrow){
+    currentPlayerId=(lastThrow.playerId===currentMatch.player1Id)?currentMatch.player2Id:currentMatch.player1Id;
+    currentRoundNumber=lastThrow.round;
+  }else{
+    currentPlayerId=currentMatch.legs[currentLegIndex].startingPlayerId;
+    currentRoundNumber=1;
+  }
+  document.getElementById('roundNumber').innerText=String(currentRoundNumber);
+  document.getElementById('roundInfoRound').innerText=String(currentRoundNumber);
+  updateLiveAverages();
+  updateActivePlayerUI();
+  updateCheckoutButtons();
+  document.getElementById('matchMsg').innerText='Poslední hod vrácen.';
+}
+function endMatch(){
+  if(!confirm('Opravdu ukončit zápas?'))return;
+  finishMatch(true);
+}
+
+/* STATS & PLAYERS AGGREGATION */
+function computeMatchStats(match){
+  const stats={};
+  [match.player1Id,match.player2Id].forEach(id=>{
+    stats[id]={points:0,darts:0,maxCheckout:0,minDartsForCheckout:null,count100plus:0};
+  });
+  match.legs.forEach(leg=>{
+    const dartsInLeg={};
+    dartsInLeg[match.player1Id]=0;
+    dartsInLeg[match.player2Id]=0;
+    const remaining={};
+    remaining[match.player1Id]=501;
+    remaining[match.player2Id]=501;
+    leg.throws.forEach(t=>{
+      const pid=t.playerId,pts=t.points,d=t.dartsThisThrow||3;
+      stats[pid].points+=pts;
+      stats[pid].darts+=d;
+      dartsInLeg[pid]+=d;
+      remaining[pid]-=pts;
+      if(pts>=100)stats[pid].count100plus++;
+      if(remaining[pid]===0){
+        if(pts>stats[pid].maxCheckout)stats[pid].maxCheckout=pts;
+        const dtot=dartsInLeg[pid];
+        if(stats[pid].minDartsForCheckout===null||dtot<stats[pid].minDartsForCheckout)
+          stats[pid].minDartsForCheckout=dtot;
+      }
+    });
+  });
+  return stats;
+}
+function updateLiveAverages(){
+  if(!currentMatch)return;
+  const stats=computeMatchStats(currentMatch);
+  const s1=stats[currentMatch.player1Id],s2=stats[currentMatch.player2Id];
+  const avg1=s1.darts?((s1.points/s1.darts)*3).toFixed(1):'-';
+  const avg2=s2.darts?((s2.points/s2.darts)*3).toFixed(1):'-';
+  document.getElementById('p1Avg').innerText=avg1;
+  document.getElementById('p2Avg').innerText=avg2;
+}
+function updatePlayersTotals(stats){
+  Object.keys(stats).forEach(idStr=>{
+    const pid=Number(idStr),ps=stats[pid];
+    const p=state.players.find(x=>x.id===pid);if(!p)return;
+    p.totalPoints+=ps.points;
+    p.totalDarts+=ps.darts;
+    p.totalMatches=(p.totalMatches||0)+1;
+  });
+}
+function showMatchStats(match,stats){
+  const p1=state.players.find(x=>x.id===match.player1Id)||{name:'Hráč 1'};
+  const p2=state.players.find(x=>x.id===match.player2Id)||{name:'Hráč 2'};
+  const s1=stats[match.player1Id],s2=stats[match.player2Id];
+  const avg1=s1.darts?((s1.points/s1.darts)*3).toFixed(2):'-';
+  const avg2=s2.darts?((s2.points/s2.darts)*3).toFixed(2):'-';
+  const winner=match.winnerId===match.player1Id?p1.name:
+               match.winnerId===match.player2Id?p2.name:'N/A';
+  document.getElementById('statsContent').innerHTML=`
+    <p><strong>Hráč 1:</strong> ${p1.name}</p>
+    <p><strong>Hráč 2:</strong> ${p2.name}</p>
+    <p><strong>Vítěz zápasu:</strong> ${winner}</p>
+    <h3>${p1.name}</h3>
+    <ul>
+      <li>Průměr na 3 šipky: ${avg1}</li>
+      <li>Nejvyšší zavření: ${s1.maxCheckout || '-'}</li>
+      <li>Nejrychlejší zavření (šipky): ${s1.minDartsForCheckout || '-'}</li>
+      <li>Počet náhozů 100+: ${s1.count100plus}</li>
+    </ul>
+    <h3>${p2.name}</h3>
+    <ul>
+      <li>Průměr na 3 šipky: ${avg2}</li>
+      <li>Nejvyšší zavření: ${s2.maxCheckout || '-'}</li>
+      <li>Počet náhozů 100+: ${s2.count100plus}</li>
+    </ul>`;
+  showScreen('statsScreen');
+}
+function finishMatch(force=false){
+  const finished=currentMatch;
+  const stats=computeMatchStats(finished);
+  updatePlayersTotals(stats);
+  state.matches.push(finished);
+  saveState();
+  showMatchStats(finished,stats);
+  currentMatch=null;
+}
+
+/* HISTORY */
+function showHistory() {
+  const tbody = document.getElementById('historyTableBody');
+  tbody.innerHTML = '';
+
+  if (!state.matches || state.matches.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align:center; padding:20px; font-size:18px;">
+          Žádné odehrané zápasy
+        </td>
+      </tr>`;
+    showScreen('historyScreen');
+    return;
+  }
+
+  const matches = state.matches.slice().sort((a,b) => a.id - b.id);
+
+  for (const m of matches) {
+    const p1 = state.players.find(x => x.id === m.player1Id) || { name: '?' };
+    const p2 = state.players.find(x => x.id === m.player2Id) || { name: '?' };
+
+    const p1W = countLegWins(m, m.player1Id);
+    const p2W = countLegWins(m, m.player2Id);
+
+    const winner =
+      m.winnerId === m.player1Id ? p1.name :
+      m.winnerId === m.player2Id ? p2.name : 'N/A';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${m.id}</td>
+      <td>${p1.name}</td>
+      <td>${p2.name}</td>
+      <td>${p1W} : ${p2W}</td>
+      <td>${winner}</td>
+      <td><button class="btn-ghost" onclick="showMatchDetail(${m.id})">Detail</button></td>
+      <td><button class="btn-danger" onclick="deleteMatch(${m.id})">Smazat</button></td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  showScreen('historyScreen');
+}
+function showMatchDetail(id){
+  const m=state.matches.find(x=>x.id===id);
+  if(!m){alert('Zápas nenalezen');return;}
+  const p1=state.players.find(x=>x.id===m.player1Id)||{name:'?'};
+  const p2=state.players.find(x=>x.id===m.player2Id)||{name:'?'};
+  const p1W=countLegWins(m,m.player1Id);
+  const p2W=countLegWins(m,m.player2Id);
+  let winner='N/A';
+  if(m.winnerId===m.player1Id)winner=p1.name;
+  if(m.winnerId===m.player2Id)winner=p2.name;
+  let html=`
+    <p><strong>Hráč 1:</strong> ${p1.name}</p>
+    <p><strong>Hráč 2:</strong> ${p2.name}</p>
+    <p><strong>Výsledek legů:</strong> ${p1W} : ${p2W}</p>
+    <p><strong>Vítěz:</strong> ${winner}</p>`;
+  m.legs.forEach((leg,i)=>{
+    html+=`<h3>Leg ${i+1} (max ${leg.maxRounds} kol)</h3>`;
+    html+=`<table class="simple"><thead><tr>
+      <th>Kolo</th>
+      <th>${p1.name} – Scored</th>
+      <th>${p1.name} – To Go</th>
+      <th>${p2.name} – Scored</th>
+      <th>${p2.name} – To Go</th>
+    </tr></thead><tbody>`;
+    let p1Rem=501,p2Rem=501;
+    const maxR=leg.throws.reduce((max,t)=>Math.max(max,t.round),0)||0;
+    for(let r=1;r<=maxR;r++){
+      const row={p1S:'',p1To:'',p2S:'',p2To:''};
+      const thr=leg.throws.filter(t=>t.round===r);
+      thr.forEach(t=>{
+        if(t.playerId===m.player1Id){row.p1S=t.points;p1Rem=t.remainingAfter;row.p1To=p1Rem;}
+        if(t.playerId===m.player2Id){row.p2S=t.points;p2Rem=t.remainingAfter;row.p2To=p2Rem;}
+      });
+      if(r===1){row.p1To=row.p1To||501;row.p2To=row.p2To||501;}
+      html+=`<tr>
+        <td>${r}</td>
+        <td>${row.p1S||''}</td>
+        <td>${row.p1To||''}</td>
+        <td>${row.p2S||''}</td>
+        <td>${row.p2To||''}</td>
+      </tr>`;
+    }
+    html+='</tbody></table>';
+  });
+  document.getElementById('matchDetailContent').innerHTML=html;
+  showScreen('matchDetailScreen');
+}
+function deleteMatch(id){
+  const idx=state.matches.findIndex(x=>x.id===id);
+  if(idx===-1){alert('Zápas nenalezen');return;}
+  if(!confirm('Opravdu smazat tento zápas?'))return;
+  state.matches.splice(idx,1);
+  saveState();
+  showHistory();
+}
+
+/* INIT */
+loadState();
+showScreen('menu');
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => {
+      console.error('SW registration failed', err);
+    });
+  });
 }
 </script>
 </body>
